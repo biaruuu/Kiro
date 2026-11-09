@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 import ShareButton from './ShareButton';
-import { getLatest, FALLBACK_URL } from '@/lib/release';
+import { getLatest } from '@/lib/release';
 import {
   IconAndroid, IconBolt, IconCalendar, IconCaptions, IconChat, IconDisk, IconDownload, IconHistory,
   IconPalette, IconPip, IconSaver, IconShield, IconSpark, IconTag, IconUsers,
@@ -44,7 +44,8 @@ const FAQ = [
 
 export default async function Page() {
   const latest = await getLatest();
-  const qr = await QRCode.toString(latest.url || FALLBACK_URL, { type: 'svg', margin: 1, width: 168, color: { dark: '#0b0b0d', light: '#ffffff' } });
+  const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://kirostore.vercel.app';
+  const qr = await QRCode.toString(`${site}/download`, { type: 'svg', margin: 1, width: 168, color: { dark: '#0b0b0d', light: '#ffffff' } });
   const [newest, ...older] = latest.notes;
 
   return (
@@ -62,7 +63,7 @@ export default async function Page() {
             <a href="#install">How to install</a>
             <a href="#faq">FAQ</a>
           </nav>
-          <a className="btn btn-primary btn-sm" href={latest.url} download>
+          <a className="btn btn-primary btn-sm" href="/download">
             <IconDownload size={16} />
             Get the app
           </a>
@@ -91,7 +92,7 @@ export default async function Page() {
               </div>
 
               <div className="actions">
-                <a className="btn btn-primary btn-lg" href={latest.url} download>
+                <a className="btn btn-primary btn-lg" href="/download">
                   <IconDownload size={20} />
                   Install
                 </a>
@@ -216,7 +217,6 @@ export default async function Page() {
           <span>Kiro by AniBiar TV</span>
           <span className="links">
             <a href="https://anibiartv.vercel.app">Website</a>
-            <a href="https://github.com/biaruuu/anibiar-androidv2/releases">All releases</a>
           </span>
         </div>
       </footer>
@@ -224,7 +224,7 @@ export default async function Page() {
       <div className="dock" role="region" aria-label="Install Kiro">
         <img src="/icon.png" alt="" width={44} height={44} />
         <div className="dock-t"><strong>Kiro</strong><span>{latest.version ? `v${latest.version} · ${latest.size}` : 'Free · Android'}</span></div>
-        <a className="btn btn-primary" href={latest.url} download><IconDownload size={18} />Install</a>
+        <a className="btn btn-primary" href="/download"><IconDownload size={18} />Install</a>
       </div>
     </>
   );
