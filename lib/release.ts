@@ -1,3 +1,5 @@
+import { SUPABASE_KEY, SUPABASE_URL } from './supabase';
+
 const REPO = 'biaruuu/anibiar-androidv2';
 const DIRECT = `https://github.com/${REPO}/releases/latest/download/Kiro.apk`;
 
@@ -59,12 +61,33 @@ async function getText(url: string): Promise<string> {
 }
 
 /** Newest APK on GitHub Releases plus the app's changelog. Falls back to the permanent "latest" link if GitHub can't be reached. */
+async function getPublished(): Promise<{ build: number; version: string; apk_url: string; size: number; published_at?: string } | null> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/latest_release`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: '{}',
+      next: { revalidate: 120 },
+    });
+    if (!res.ok) return null;
+    const rows = (await res.json()) as any[];
+    return rows[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getLatest(): Promise<Latest> {
+  // The release you published in the admin panel wins; GitHub's newest is only the fallback.
+  const pub = await getPublished();
   const [rel, changelog] = await Promise.all([
     getJson(`https://api.github.com/repos/${REPO}/releases/latest`),
     getText(`https://raw.githubusercontent.com/${REPO}/main/app/src/main/assets/changelog.md`),
   ]);
   const notes = parseChangelog(changelog);
+  if (pub?.apk_url) {
+    return { live: true, version: pub.version, size: formatSize(Number(pub.size) || 0), updated: formatDate(pub.published_at ?? ''), url: pub.apk_url, notes };
+  }
   const asset = rel?.assets?.find((a: any) => typeof a?.name === 'string' && a.name.toLowerCase().endsWith('.apk'));
   if (!rel || !asset) {
     return { live: false, version: '', size: '', updated: '', url: DIRECT, notes };
